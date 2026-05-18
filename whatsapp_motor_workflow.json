@@ -1,0 +1,252 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "TU-ID",
+      "name": "Reloj (Cada 10 min)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -720,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, numero, nombre \nFROM contactos \nWHERE enviado = false \n  AND numero IS NOT NULL \n  AND TRIM(numero) NOT IN ('', '-', '0')\n  AND LENGTH(TRIM(numero)) >= 8\nLIMIT 1;",
+        "options": {}
+      },
+      "id": "TU-ID",
+      "name": "Traer 1 Contacto",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [
+        -480,
+        -96
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "TU-ID",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, nombre_instancia, token \nFROM instancias \nORDER BY id ASC;",
+        "options": {}
+      },
+      "id": "TU-ID",
+      "name": "Traer Todas las Instancias",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [
+        -272,
+        -96
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "TU-ID",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT contador_instancia FROM workflow_state WHERE id = 1;",
+        "options": {}
+      },
+      "id": "TU-ID",
+      "name": "Obtener Contador Instancia",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [
+        -80,
+        -96
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "TU-ID",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const contactos = $items('Traer 1 Contacto');\nconst instancias = $items('Traer Todas las Instancias');\nconst contador = $items('Obtener Contador Instancia');\n\n// Validaciones básicas\nif (contactos.length === 0 || instancias.length === 0 || contador.length === 0) {\n  return [];\n}\n\n// Buscar primer contacto seguro\nconst contacto = contactos.find(c => \n  c.json.numero && c.json.numero.toString().trim().length >= 10\n);\n\nif (!contacto) return [];\n\n// Calcular índice de instancia de forma dinámica\nconst contadorActual = parseInt(contador[0].json.contador_instancia) || 0;\nconst indiceSeguro = contadorActual % instancias.length;\nconst instanciaSeleccionada = instancias[indiceSeguro].json;\n\nif (!instanciaSeleccionada.nombre_instancia || !instanciaSeleccionada.token) {\n  return [];\n}\n\n// Delay aleatorio seguro entre 3 y 8 minutos\nconst minDelay = 180;\nconst maxDelay = 480;\nconst delayCalculado = Math.floor(Math.random() * (maxDelay - minDelay + 1) + minDelay);\n\nreturn [{\n  json: {\n    numero_destino: contacto.json.numero.toString().trim(),\n    nombre: contacto.json.nombre,\n    id_contacto: contacto.json.id,\n    instancia_usar: instanciaSeleccionada.nombre_instancia,\n    token_instancia: instanciaSeleccionada.token,\n    delay_segundos: delayCalculado,\n    contador_usado: indiceSeguro,\n    proximo_contador: (indiceSeguro + 1) % instancias.length\n  }\n}];"
+      },
+      "id": "TU-ID",
+      "name": "El Orquestador",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "={{$json.instancia_usar}}",
+        "remoteJid": "={{$json.numero_destino}}",
+        "messageText": "= MENSAJE PARA EL BOT",
+        "options_message": {
+          "delay": "={{$json.delay_segundos}}"
+        }
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        336,
+        -96
+      ],
+      "id": "TU-ID",
+      "name": "Enviar texto",
+      "credentials": {
+        "evolutionApi": {
+          "id": "TU-ID",
+          "name": "Evolution account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE contactos SET enviado = true WHERE id = {{ $('El Orquestador').item.json.id_contacto }};",
+        "options": {}
+      },
+      "id": "TU-ID",
+      "name": "Marcar como Enviado",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [
+        528,
+        -96
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "TU-ID",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE workflow_state SET contador_instancia = {{ $('El Orquestador').item.json.proximo_contador }} WHERE id = 1;",
+        "options": {}
+      },
+      "id": "TU-ID",
+      "name": "Actualizar Contador",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.3,
+      "position": [
+        736,
+        -96
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "TU-ID",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Reloj (Cada 10 min)": {
+      "main": [
+        [
+          {
+            "node": "Traer 1 Contacto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Traer 1 Contacto": {
+      "main": [
+        [
+          {
+            "node": "Traer Todas las Instancias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Traer Todas las Instancias": {
+      "main": [
+        [
+          {
+            "node": "Obtener Contador Instancia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Contador Instancia": {
+      "main": [
+        [
+          {
+            "node": "El Orquestador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "El Orquestador": {
+      "main": [
+        [
+          {
+            "node": "Enviar texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar texto": {
+      "main": [
+        [
+          {
+            "node": "Marcar como Enviado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar como Enviado": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Contador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "TU-ID"
+  }
+}
