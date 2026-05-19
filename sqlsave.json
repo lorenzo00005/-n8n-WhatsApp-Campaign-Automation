@@ -1,0 +1,159 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "path": "TU-ID",
+        "formTitle": "Formulario de Subida",
+        "formDescription": "Subí tu archivo Excel acá para cargarlo a la base de datos.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Archivo Excel",
+              "fieldType": "file",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "TU-ID",
+      "name": "Formulario de Subida1",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.1,
+      "position": [
+        160,
+        400
+      ],
+      "webhookId": "TU-ID"
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "Archivo_Excel",
+        "fileFormat": "xlsx",
+        "options": {}
+      },
+      "id": "TU-ID",
+      "name": "Extraer Datos del Excel1",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 2,
+      "position": [
+        544,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "contactos",
+          "mode": "list",
+          "cachedResultName": "contactos"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "enviado": false,
+            "numero": "={{ $json.numero }}",
+            "nombre": "={{ $json.nombre }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "numero",
+              "displayName": "numero",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "enviado",
+              "displayName": "enviado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "TU-ID",
+      "name": "Guardar en Base de Datos1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        848,
+        416
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "TU-ID",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Formulario de Subida1": {
+      "main": [
+        [
+          {
+            "node": "Extraer Datos del Excel1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Datos del Excel1": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Base de Datos1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "TU-ID"
+  }
+}
