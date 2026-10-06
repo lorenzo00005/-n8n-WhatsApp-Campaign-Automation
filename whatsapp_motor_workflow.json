@@ -12,7 +12,7 @@
         }
       },
       "id": "TU-ID",
-      "name": "Reloj (Cada 10 min)",
+      "name": "Reloj (Cada 1 min)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
       "position": [
@@ -166,7 +166,7 @@
     }
   ],
   "connections": {
-    "Reloj (Cada 10 min)": {
+    "Reloj (Cada 1 min)": {
       "main": [
         [
           {
